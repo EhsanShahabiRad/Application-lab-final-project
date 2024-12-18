@@ -80,34 +80,12 @@ Open the frontend URL in your browser (http://localhost:5173) to interact with t
 use Username: admin  and Password: admin to access admin-panel
 use Username: user  and Password: user to access application as a normal user
 
-8. Folder Structure
-
-E-Shop/
-│
-├── Backend/
-│   ├── Controllers/
-│   ├── Models/
-│   ├── Routes/
-│   ├── .env
-│   ├── main.js
-│   └── package.json
-│
-├── Frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── services/
-│   │   └── App.vue
-│   ├── .env
-│   └── package.json
-│
-└── DB/           <-- MongoDB backup folder
-
-9. Troubleshooting
+8. Troubleshooting
 Backend doesn’t start: Ensure MongoDB is running and the .env file is properly configured.
 Frontend API errors: Verify the VITE_BASE_API_URL in Frontend/.env matches the backend URL.
 PayPal Issues: Check PayPal sandbox credentials in the backend .env file.
 
-10. Credits
+9. Credits
 This project is built by Ehsan Shahabirad.
 Technologies used:
 
