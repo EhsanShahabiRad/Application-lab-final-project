@@ -1,10 +1,7 @@
 <template>
   <div class="shop-container">
     <div class="carts-section">
-      <ShopCartsList
-        :products="products"
-        @update-quantity="updateQuantity"
-      />
+      <ShopCartsList :products="products" @update-quantity="updateQuantity" />
     </div>
     <div class="summary-section">
       <ShopOrderSummary :products="products" />
@@ -21,20 +18,25 @@ import ProductService from "./Shop/Services/ProductService.js";
 const products = ref([]);
 const productService = new ProductService("http://localhost:3000");
 
-
 const fetchProducts = async () => {
-  const fetchedProducts = await productService.fetchAllProducts();
-  products.value = fetchedProducts.map((product) => ({
-    ...product,
-    quantity: 0,
-  }));
+  try {
+    const fetchedProducts = await productService.fetchAllProducts();
+    console.log("Fetched products:", fetchedProducts);
+    products.value = fetchedProducts.map((product) => ({
+      ...product,
+      quantity: 0,
+    }));
+    console.log("Products after mapping:", products.value);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+  }
 };
-
 
 const updateQuantity = (updatedProduct) => {
   const index = products.value.findIndex((p) => p._id === updatedProduct._id);
   if (index !== -1) {
     products.value[index] = updatedProduct;
+    console.log("Updated products:", products.value);
   }
 };
 
