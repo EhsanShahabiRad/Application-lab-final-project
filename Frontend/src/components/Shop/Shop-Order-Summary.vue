@@ -65,67 +65,54 @@ const renderPayPalButton = async () => {
   window.paypal
     .Buttons({
       createOrder: async () => {
-        try {
-          const response = await fetch(
-            "http://localhost:3000/api/paypal/create-order",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderTotal: orderTotal.value }),
-            }
-          );
-
-          const data = await response.json();
-
-          if (!response.ok || !data.id) {
-            console.error("Error creating order:", data);
-            alert("Failed to create PayPal order. Please try again.");
-            throw new Error("Failed to create PayPal order");
+        const response = await fetch(
+          "http://localhost:3000/api/paypal/create-order",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderTotal: orderTotal.value }),
           }
-
-          return data.id;
-        } catch (error) {
-          console.error("Error in createOrder:", error);
-          alert("Failed to create order. Please try again later.");
-          throw error;
-        }
+        );
+        const data = await response.json();
+        return data.id;
       },
       onApprove: async (data) => {
         try {
-          const token = localStorage.getItem("authToken");
-
-          const saveOrderPayload = {
-            orderId: data.orderID,
-            items: props.products.filter((item) => item.quantity > 0),
-            orderTotal: orderTotal.value,
-          };
-
           const saveOrderResponse = await fetch(
             "http://localhost:3000/api/orders/save-order",
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
               },
-              body: JSON.stringify(saveOrderPayload),
+              body: JSON.stringify({
+                orderId: data.orderID,
+                items: props.products.filter((item) => item.quantity > 0),
+                orderTotal: orderTotal.value,
+              }),
             }
           );
 
           if (saveOrderResponse.ok) {
-            alert("Payment Successful and Order Saved!");
+            console.log("Order successfully saved!");
+            setTimeout(() => {
+              alert("Payment Successful and Order Saved!");
+            }, 500);
           } else {
-            const errorData = await saveOrderResponse.json();
-            console.error("Save Order Response Error:", errorData);
-            alert(
-              "Payment was successful, but we couldn't save the order. Please contact support."
-            );
+            setTimeout(() => {
+              alert(
+                "Payment was successful, but we couldn't save the order. Please contact support."
+              );
+            }, 500);
           }
         } catch (error) {
           console.error("Error saving order:", error);
-          alert(
-            "Payment was successful, but an error occurred while saving the order."
-          );
+          setTimeout(() => {
+            alert(
+              "Payment was successful, but there was an error saving the order."
+            );
+          }, 500);
         }
       },
       onError: (err) => {
