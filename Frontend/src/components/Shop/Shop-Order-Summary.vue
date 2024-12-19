@@ -17,18 +17,14 @@
       <strong>Order Total:</strong>
       <strong>${{ orderTotal }}</strong>
     </div>
-    <!-- PayPal Button -->
-    <div id="paypal-button-container" v-if="isLoggedIn"></div>
-    <div v-else>
-      <p class="login-warning">Please log in to proceed with payment.</p>
-    </div>
+
+    <div id="paypal-button-container"></div>
   </div>
 </template>
 
 <script setup>
 import { ref, defineProps, computed, onMounted } from "vue";
 
-// Define props
 const props = defineProps({
   products: {
     type: Array,
@@ -36,16 +32,12 @@ const props = defineProps({
   },
 });
 
-// Token or user authentication status
-const token = localStorage.getItem("authToken");
-const isLoggedIn = ref(!!token); // Set to true if token exists
-
-const subtotal = computed(() => {
-  return props.products.reduce(
+const subtotal = computed(() =>
+  props.products.reduce(
     (total, product) => total + product.price * product.quantity,
     0
-  );
-});
+  )
+);
 const shippingCost = computed(() => (subtotal.value > 0 ? 10 : 0));
 const tax = computed(() => (subtotal.value * 0.1).toFixed(2));
 const orderTotal = computed(() =>
@@ -68,31 +60,77 @@ const loadPayPalScript = () => {
 };
 
 const renderPayPalButton = async () => {
-  if (!isLoggedIn.value) return; // Do not render if not logged in
-
   await loadPayPalScript();
 
   window.paypal
     .Buttons({
       createOrder: async () => {
-        const response = await fetch(
-          "http://localhost:3000/api/paypal/create-order",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ orderTotal: orderTotal.value }),
-          }
-        );
+        try {
+          const response = await fetch(
+            "http://localhost:3000/api/paypal/create-order",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderTotal: orderTotal.value }),
+            }
+          );
 
-        const data = await response.json();
-        return data.id;
+          const data = await response.json();
+
+          if (!response.ok || !data.id) {
+            console.error("Error creating order:", data);
+            alert("Failed to create PayPal order. Please try again.");
+            throw new Error("Failed to create PayPal order");
+          }
+
+          return data.id;
+        } catch (error) {
+          console.error("Error in createOrder:", error);
+          alert("Failed to create order. Please try again later.");
+          throw error;
+        }
       },
       onApprove: async (data) => {
-        alert(`Payment Successful! Order ID: ${data.orderID}`);
-        console.log("Payment Approved:", data);
+        try {
+          const token = localStorage.getItem("authToken");
+
+          const saveOrderPayload = {
+            orderId: data.orderID,
+            items: props.products.filter((item) => item.quantity > 0),
+            orderTotal: orderTotal.value,
+          };
+
+          const saveOrderResponse = await fetch(
+            "http://localhost:3000/api/orders/save-order",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(saveOrderPayload),
+            }
+          );
+
+          if (saveOrderResponse.ok) {
+            alert("Payment Successful and Order Saved!");
+          } else {
+            const errorData = await saveOrderResponse.json();
+            console.error("Save Order Response Error:", errorData);
+            alert(
+              "Payment was successful, but we couldn't save the order. Please contact support."
+            );
+          }
+        } catch (error) {
+          console.error("Error saving order:", error);
+          alert(
+            "Payment was successful, but an error occurred while saving the order."
+          );
+        }
       },
       onError: (err) => {
         console.error("Error during PayPal checkout:", err);
+        alert("An error occurred during the payment process.");
       },
     })
     .render("#paypal-button-container");
@@ -129,13 +167,6 @@ onMounted(() => {
 }
 
 #paypal-button-container {
-  margin-top: 20px;
-}
-
-.login-warning {
-  color: red;
-  font-size: 14px;
-  text-align: center;
   margin-top: 20px;
 }
 </style>
