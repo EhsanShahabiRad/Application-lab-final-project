@@ -18,19 +18,27 @@
       <strong>${{ orderTotal }}</strong>
     </div>
     <!-- PayPal Button -->
-    <div id="paypal-button-container"></div>
+    <div id="paypal-button-container" v-if="isLoggedIn"></div>
+    <div v-else>
+      <p class="login-warning">Please log in to proceed with payment.</p>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, defineProps, computed, onMounted } from "vue";
 
+// Define props
 const props = defineProps({
   products: {
     type: Array,
     required: true,
   },
 });
+
+// Token or user authentication status
+const token = localStorage.getItem("authToken");
+const isLoggedIn = ref(!!token); // Set to true if token exists
 
 const subtotal = computed(() => {
   return props.products.reduce(
@@ -60,6 +68,8 @@ const loadPayPalScript = () => {
 };
 
 const renderPayPalButton = async () => {
+  if (!isLoggedIn.value) return; // Do not render if not logged in
+
   await loadPayPalScript();
 
   window.paypal
@@ -119,6 +129,13 @@ onMounted(() => {
 }
 
 #paypal-button-container {
+  margin-top: 20px;
+}
+
+.login-warning {
+  color: red;
+  font-size: 14px;
+  text-align: center;
   margin-top: 20px;
 }
 </style>
